@@ -22,13 +22,16 @@ use errors::*;
 pub enum Network {
     Mainnet,
     Testnet,
+    Regtest,
 }
 
 fn parse_hash(value: &Value) -> Result<Sha256dHash> {
-    Ok(
-        Sha256dHash::from_hex(value.as_str().chain_err(|| "non-string value")?)
-            .chain_err(|| "non-hex value")?,
-    )
+    Ok(Sha256dHash::from_hex(value
+        .as_str()
+        .chain_err(|| format!("non-string value: {}", value))?)
+        .chain_err(|| {
+        format!("non-hex value: {}", value)
+    })?)
 }
 
 fn header_from_value(value: Value) -> Result<BlockHeader> {
@@ -242,6 +245,7 @@ impl Daemon {
         match self.network {
             Network::Mainnet => 0xD9B4BEF9,
             Network::Testnet => 0x0709110B,
+            Network::Regtest => 0xDAB5BFFA,
         }
     }
 
