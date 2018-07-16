@@ -22,7 +22,6 @@ use errors::*;
 pub enum Network {
     Mainnet,
     Testnet,
-    Regtest,
 }
 
 fn parse_hash(value: &Value) -> Result<Sha256dHash> {
@@ -240,7 +239,6 @@ impl Daemon {
         match self.network {
             Network::Mainnet => 0xD9B4BEF9,
             Network::Testnet => 0x0709110B,
-            Network::Regtest => 0xDAB5BFFA,
         }
     }
 
