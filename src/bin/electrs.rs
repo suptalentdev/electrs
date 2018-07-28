@@ -20,7 +20,7 @@ fn run_server(config: &Config) -> Result<()> {
     let daemon = Daemon::new(
         &config.daemon_dir,
         config.daemon_rpc_addr,
-        config.cookie_getter(),
+        &config.cookie,
         config.network_type,
         &metrics,
     )?;

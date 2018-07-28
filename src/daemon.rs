@@ -11,9 +11,7 @@ use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Lines, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
+use std::sync::Mutex;
 
 use metrics::{HistogramOpts, HistogramVec, Metrics};
 use util::HeaderList;
@@ -127,58 +125,49 @@ impl MempoolEntry {
     }
 }
 
-pub trait CookieGetter: Send + Sync {
-    fn get(&self) -> String;
-}
-
 struct Connection {
     tx: TcpStream,
     rx: Lines<BufReader<TcpStream>>,
-    cookie_getter: Arc<CookieGetter>,
+    cookie_b64: String,
     addr: SocketAddr,
 }
 
-fn tcp_connect(addr: SocketAddr) -> Result<TcpStream> {
-    loop {
-        match TcpStream::connect(addr) {
-            Ok(conn) => return Ok(conn),
-            Err(err) => {
-                warn!("failed to connect daemon at {}: {}", addr, err);
-                thread::sleep(Duration::from_secs(3));
-                continue;
-            }
-        }
-    }
-}
-
 impl Connection {
-    fn new(addr: SocketAddr, cookie_getter: Arc<CookieGetter>) -> Result<Connection> {
-        let conn = tcp_connect(addr)?;
+    fn new(addr: SocketAddr, cookie_b64: String) -> Result<Connection> {
+        let conn = TcpStream::connect(addr).chain_err(|| format!("failed to connect to {}", addr))?;
         let reader = BufReader::new(conn.try_clone()
             .chain_err(|| format!("failed to clone {:?}", conn))?);
         Ok(Connection {
             tx: conn,
             rx: reader.lines(),
-            cookie_getter,
+            cookie_b64,
             addr,
         })
     }
 
     pub fn reconnect(&self) -> Result<Connection> {
-        Connection::new(self.addr, self.cookie_getter.clone())
+        let conn = TcpStream::connect(self.addr)
+            .chain_err(|| format!("failed to connect to {}", self.addr))?;
+        let reader = BufReader::new(conn.try_clone()
+            .chain_err(|| format!("failed to clone {:?}", conn))?);
+        Ok(Connection {
+            tx: conn,
+            rx: reader.lines(),
+            cookie_b64: self.cookie_b64.clone(),
+            addr: self.addr,
+        })
     }
 
     fn send(&mut self, request: &str) -> Result<()> {
-        let cookie_b64 = base64::encode(&self.cookie_getter.get());
         let msg = format!(
             "POST / HTTP/1.1\nAuthorization: Basic {}\nContent-Length: {}\n\n{}",
-            cookie_b64,
+            self.cookie_b64,
             request.len(),
             request,
         );
-        self.tx.write_all(msg.as_bytes()).chain_err(|| {
-            ErrorKind::Connection("disconnected from daemon while sending".to_owned())
-        })
+        self.tx
+            .write_all(msg.as_bytes())
+            .chain_err(|| "failed to send request")
     }
 
     fn recv(&mut self) -> Result<String> {
@@ -187,16 +176,13 @@ impl Connection {
         let mut contents: Option<String> = None;
         let iter = self.rx.by_ref();
         let status = iter.next()
-            .chain_err(|| {
-                ErrorKind::Connection("disconnected from daemon while receiving".to_owned())
-            })?
+            .chain_err(|| "disconnected from daemon")?
             .chain_err(|| "failed to read status")?;
         if status != "HTTP/1.1 200 OK" {
-            let msg = format!("request failed {:?}", status);
-            bail!(ErrorKind::Connection(msg));
+            bail!("request failed: {}", status);
         }
         for line in iter {
-            let line = line.chain_err(|| ErrorKind::Connection("failed to read".to_owned()))?;
+            let line = line.chain_err(|| "failed to read")?;
             if line.is_empty() {
                 in_header = false; // next line should contain the actual response.
             } else if !in_header {
@@ -204,7 +190,7 @@ impl Connection {
                 break;
             }
         }
-        contents.chain_err(|| ErrorKind::Connection("no reply from daemon".to_owned()))
+        contents.chain_err(|| "no reply")
     }
 }
 
@@ -241,14 +227,14 @@ impl Daemon {
     pub fn new(
         daemon_dir: &PathBuf,
         daemon_rpc_addr: SocketAddr,
-        cookie_getter: Arc<CookieGetter>,
+        cookie: &str,
         network: Network,
         metrics: &Metrics,
     ) -> Result<Daemon> {
         let daemon = Daemon {
             daemon_dir: daemon_dir.clone(),
             network,
-            conn: Mutex::new(Connection::new(daemon_rpc_addr, cookie_getter)?),
+            conn: Mutex::new(Connection::new(daemon_rpc_addr, base64::encode(cookie))?),
             message_id: Counter::new(),
             latency: metrics.histogram_vec(
                 HistogramOpts::new("daemon_rpc", "Bitcoind RPC latency (in seconds)"),
@@ -297,8 +283,8 @@ impl Daemon {
     }
 
     fn call_jsonrpc(&self, method: &str, request: &Value) -> Result<Value> {
-        let mut conn = self.conn.lock().unwrap();
         let timer = self.latency.with_label_values(&[method]).start_timer();
+        let mut conn = self.conn.lock().unwrap();
         let request = request.to_string();
         conn.send(&request)?;
         self.size
@@ -313,25 +299,10 @@ impl Daemon {
         Ok(result)
     }
 
-    fn retry_call_jsonrpc(&self, method: &str, request: &Value) -> Result<Value> {
-        loop {
-            match self.call_jsonrpc(method, request) {
-                Err(Error(ErrorKind::Connection(msg), _)) => {
-                    warn!("connection failed: {}", msg);
-                    thread::sleep(Duration::from_secs(3));
-                    let mut conn = self.conn.lock().unwrap();
-                    *conn = conn.reconnect()?;
-                    continue;
-                }
-                result => return result,
-            }
-        }
-    }
-
     fn request(&self, method: &str, params: Value) -> Result<Value> {
         let id = self.message_id.next();
         let req = json!({"method": method, "params": params, "id": id});
-        let reply = self.retry_call_jsonrpc(method, &req)
+        let reply = self.call_jsonrpc(method, &req)
             .chain_err(|| format!("RPC failed: {}", req))?;
         parse_jsonrpc_reply(reply, method, id)
     }
@@ -343,7 +314,7 @@ impl Daemon {
             .map(|params| json!({"method": method, "params": params, "id": id}))
             .collect();
         let mut results = vec![];
-        let mut replies = self.retry_call_jsonrpc(method, &reqs)
+        let mut replies = self.call_jsonrpc(method, &reqs)
             .chain_err(|| format!("RPC failed: {}", reqs))?;
         if let Some(replies_vec) = replies.as_array_mut() {
             for reply in replies_vec {
