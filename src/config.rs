@@ -3,20 +3,12 @@ use std::env::home_dir;
 use std::fs;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use stderrlog;
 
-use daemon::Network;
+use daemon::{CookieGetter, Network};
 
 use errors::*;
-
-fn read_cookie(daemon_dir: &Path) -> Result<String> {
-    let mut path = daemon_dir.to_path_buf();
-    path.push(".cookie");
-    let contents = String::from_utf8(
-        fs::read(&path).chain_err(|| format!("failed to read cookie from {:?}", path))?
-    ).chain_err(|| "invalid cookie string")?;
-    Ok(contents.trim().to_owned())
-}
 
 #[derive(Debug)]
 pub struct Config {
@@ -25,7 +17,7 @@ pub struct Config {
     pub db_path: PathBuf,              // RocksDB directory path
     pub daemon_dir: PathBuf,           // Bitcoind data directory
     pub daemon_rpc_addr: SocketAddr,   // for connecting Bitcoind JSONRPC
-    pub cookie: String,                // for bitcoind JSONRPC authentication ("USER:PASSWORD")
+    pub cookie: Option<String>,        // for bitcoind JSONRPC authentication ("USER:PASSWORD")
     pub electrum_rpc_addr: SocketAddr, // for serving Electrum clients
     pub monitoring_addr: SocketAddr,   // for Prometheus monitoring
     pub skip_bulk_import: bool,        // slower initial indexing, for low-memory systems
@@ -91,7 +83,7 @@ impl Config {
             .arg(
                 Arg::with_name("skip_bulk_import")
                     .long("skip-bulk-import")
-                    .help("Use JSONRPC instead of directly importing blk*.dat files. Useful for remote full node or low memory system"),
+                    .help("Prepend log lines with a timestamp"),
             )
             .get_matches();
 
@@ -141,9 +133,7 @@ impl Config {
             Network::Testnet => daemon_dir.push("testnet3"),
             Network::Regtest => daemon_dir.push("regtest"),
         }
-        let cookie = m.value_of("cookie")
-            .map(|s| s.to_owned())
-            .unwrap_or_else(|| read_cookie(&daemon_dir).unwrap());
+        let cookie = m.value_of("cookie").map(|s| s.to_owned());
 
         let mut log = stderrlog::new();
         log.verbosity(m.occurrences_of("verbosity") as usize);
@@ -167,4 +157,46 @@ impl Config {
         eprintln!("{:?}", config);
         config
     }
+
+    pub fn cookie_getter(&self) -> Arc<CookieGetter> {
+        if let Some(ref value) = self.cookie {
+            Arc::new(StaticCookie {
+                value: value.clone(),
+            })
+        } else {
+            Arc::new(CookieFile {
+                daemon_dir: self.daemon_dir.clone(),
+            })
+        }
+    }
+}
+
+struct StaticCookie {
+    value: String,
+}
+
+impl CookieGetter for StaticCookie {
+    fn get(&self) -> Result<String> {
+        Ok(self.value.clone())
+    }
+}
+
+struct CookieFile {
+    daemon_dir: PathBuf,
+}
+
+impl CookieGetter for CookieFile {
+    fn get(&self) -> Result<String> {
+        read_cookie(&self.daemon_dir)
+            .chain_err(|| ErrorKind::Connection("no cookie found".to_owned()))
+    }
+}
+
+fn read_cookie(daemon_dir: &Path) -> Result<String> {
+    let mut path = daemon_dir.to_path_buf();
+    path.push(".cookie");
+    let contents = String::from_utf8(
+        fs::read(&path).chain_err(|| format!("failed to read cookie from {:?}", path))?
+    ).chain_err(|| "invalid cookie string")?;
+    Ok(contents.trim().to_owned())
 }
