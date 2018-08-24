@@ -100,6 +100,7 @@ pub struct BlockchainInfo {
     blocks: u32,
     headers: u32,
     bestblockhash: String,
+    size_on_disk: u64,
     pruned: bool,
     initialblockdownload: bool,
 }
