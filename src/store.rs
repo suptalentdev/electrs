@@ -84,7 +84,7 @@ impl DBStore {
 
     pub fn compact(self) -> Self {
         info!("starting full compaction");
-        self.db.compact_range(None::<&[u8]>, None::<&[u8]>); // would take a while
+        self.db.compact_range(None, None); // would take a while
         info!("finished full compaction");
         self
     }
@@ -98,13 +98,13 @@ impl DBStore {
     }
 }
 
-pub struct ScanIterator<'a> {
+pub struct ScanIterator {
     prefix: Vec<u8>,
-    iter: rocksdb::DBIterator<'a>,
+    iter: rocksdb::DBIterator,
     done: bool,
 }
 
-impl<'a> Iterator for ScanIterator<'a> {
+impl Iterator for ScanIterator {
     type Item = Row;
 
     fn next(&mut self) -> Option<Row> {
