@@ -234,7 +234,6 @@ impl Config {
         if config.bulk_index_threads == 0 {
             config.bulk_index_threads = num_cpus::get();
         }
-        const MB: f32 = (1 << 20) as f32;
         let config = Config {
             log,
             network_type: config.network,
@@ -247,8 +246,8 @@ impl Config {
             jsonrpc_import: config.jsonrpc_import,
             index_batch_size: config.index_batch_size,
             bulk_index_threads: config.bulk_index_threads,
-            tx_cache_size: (config.tx_cache_size_mb * MB) as usize,
-            blocktxids_cache_size: (config.blocktxids_cache_size_mb * MB) as usize,
+            tx_cache_size: config.tx_cache_size,
+            blocktxids_cache_size: config.blocktxids_cache_size,
             txid_limit: config.txid_limit,
             server_banner: config.server_banner,
         };
