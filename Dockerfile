@@ -2,7 +2,7 @@ FROM rust:1.44.1-slim-buster
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends clang=1:7.* cmake=3.* \
-     libsnappy-dev=1.* \
+     libsnappy-dev=1.* curl \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -14,7 +14,7 @@ RUN chown -R user .
 
 USER user
 
-RUN cargo install --path .
+RUN cargo install --locked --path .
 
 # Electrum RPC
 EXPOSE 50001
@@ -23,3 +23,5 @@ EXPOSE 50001
 EXPOSE 4224
 
 STOPSIGNAL SIGINT
+
+HEALTHCHECK CMD curl -fSs http://localhost:4224/ || exit 1
