@@ -14,7 +14,7 @@ RUN chown -R user .
 
 USER user
 
-RUN cargo install --locked --path .
+RUN cargo install --path .
 
 # Electrum RPC
 EXPOSE 50001

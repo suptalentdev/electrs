@@ -28,10 +28,10 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --locked --release --all
+          args: --release --all
 
       - name: Test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --locked --release --all
+          args: --release --all
