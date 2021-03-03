@@ -92,7 +92,7 @@ default = "5"
 name = "index_batch_size"
 type = "usize"
 doc = "Number of blocks to get in one JSONRPC request from bitcoind"
-default = "10"
+default = "100"
 
 [[param]]
 name = "bulk_index_threads"

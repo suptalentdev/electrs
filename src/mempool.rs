@@ -215,14 +215,11 @@ impl Tracker {
             })
             .collect();
         if !entries.is_empty() {
-            let txs = match entries
-                .iter()
-                .map(|(txid, _)| daemon.gettransaction(txid, None))
-                .collect::<Result<Vec<_>>>()
-            {
+            let txids: Vec<&Txid> = entries.iter().map(|(txid, _)| *txid).collect();
+            let txs = match daemon.gettransactions(&txids) {
                 Ok(txs) => txs,
                 Err(err) => {
-                    debug!("failed to get {} transactions: {}", entries.len(), err); // e.g. new block or RBF
+                    debug!("failed to get transactions {:?}: {}", txids, err); // e.g. new block or RBF
                     return Ok(()); // keep the mempool until next update()
                 }
             };
