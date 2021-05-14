@@ -12,7 +12,6 @@ class Client:
             'id': self.id,
             'method': method,
             'params': list(args),
-            'jsonrpc': '2.0',
         }
         msg = json.dumps(req) + '\n'
         self.s.sendall(msg.encode('ascii'))
