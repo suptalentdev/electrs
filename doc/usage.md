@@ -7,9 +7,9 @@
 Note for Raspberry Pi 4 owners: the old versions of OS/toolchains produce broken binaries.
 Make sure to use latest OS! (see #226)
 
-Install [recent Rust](https://rustup.rs/) (1.41.1+, `apt install cargo` is preferred for Debian 10),
-[latest Bitcoin Core](https://bitcoincore.org/en/download/) (0.16+)
-and [latest Electrum wallet](https://electrum.org/#download) (3.3+).
+Install [recent Rust](https://rustup.rs/) (1.48.0+, `apt install cargo` is preferred for Debian 10),
+[latest Bitcoin Core](https://bitcoincore.org/en/download/) (0.21+)
+and [latest Electrum wallet](https://electrum.org/#download) (4.0+).
 
 Also, install the following packages (on Debian or Ubuntu):
 ```bash
@@ -448,17 +448,6 @@ You can invoke any supported RPC using `netcat`, for example:
 ```
 $ echo '{"jsonrpc": "2.0", "method": "server.version", "params": ["", "1.4"], "id": 0}' | netcat 127.0.0.1 50001
 {"id":0,"jsonrpc":"2.0","result":["electrs 0.8.6","1.4"]}
-```
-Corresponding example in `Python`:
-
-```
-import socket
-
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect(("127.0.0.1", 50001))
-    f = s.makefile()
-    s.sendall(b'{"jsonrpc": "2.0", "method": "server.version", "params": ["", "1.4"], "id": 0}\n')
-    print(f.readline())
 ```
 
 For more complex tasks, you may need to convert addresses to 
