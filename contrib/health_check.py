@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import client
-import json
 
 def main():
     parser = argparse.ArgumentParser()
@@ -10,7 +9,7 @@ def main():
     args = parser.parse_args()
 
     conn = client.Client((args.host, args.port))
-    print(json.dumps(conn.call([client.request("server.version", "health_check", "1.4")])))
+    print(conn.call("server.version", "health_check", "1.4")["result"])
 
 if __name__ == '__main__':
 	main()
