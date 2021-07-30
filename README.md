@@ -2,7 +2,7 @@
 
 [![workflows](https://github.com/romanz/electrs/workflows/Rust/badge.svg)](https://github.com/romanz/electrs/actions)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-[![crates.io](http://meritbadge.herokuapp.com/electrs)](https://crates.io/crates/electrs)
+[![crates.io](https://img.shields.io/crates/v/electrs.svg)](https://crates.io/crates/electrs)
 [![gitter.im](https://badges.gitter.im/romanz/electrs.svg)](https://gitter.im/romanz/electrs)
 
 An efficient re-implementation of Electrum Server, inspired by [ElectrumX](https://github.com/kyuupichan/electrumx), [Electrum Personal Server](https://github.com/chris-belcher/electrum-personal-server) and [bitcoincore-indexd](https://github.com/jonasschnelli/bitcoincore-indexd).
@@ -16,7 +16,7 @@ thus preserving the privacy of the user's addresses and balances.
 
 ## Features
 
- * Supports Electrum protocol [v1.4](https://electrumx-spesmilo.readthedocs.io/en/latest/protocol.html)
+ * Supports Electrum protocol [v1.4](https://electrumx.readthedocs.io/en/latest/protocol.html)
  * Maintains an index over transaction inputs and outputs, allowing fast balance queries
  * Fast synchronization of the Bitcoin blockchain (~2 hours for ~187GB @ July 2018) on [modest hardware](https://gist.github.com/romanz/cd9324474de0c2f121198afe3d063548)
  * Low index storage overhead (~20%), relying on a local full node for transaction retrieval
