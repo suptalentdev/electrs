@@ -8,10 +8,6 @@ assignees: ''
 ---
 
 <!--
-        IMPORTANT: IF YOU DON'T FILL THIS TEMPLATE COMPLETELY IT WILL TAKE MORE TIME FOR US TO HELP YOU!
-        SOME EXTERNAL ELECTRS GUIDES SUCH AS RASPIBOLT ARE OUTDATED AND DO NOT WORK SO SHULD NOT BE FOLLOWED!
-        Please try with OUR usage instructions first.
-
 	If you use electrs integrated into other project report the bug to their project
 	(unless you are the project author who found the bug is in electrs itself)!
 	If electrs is crashing due to low memory try with jsonrpc-import first!
@@ -19,10 +15,6 @@ assignees: ''
 
 **Describe the bug**
 A clear and concise description of what the bug is.
-
-**Electrs version**
-Which version of `electrs` do you use? Please try to use newest version if possible.
-If it's not the newest version why you can't try the newest one?
 
 **To Reproduce**
 Steps to reproduce the behavior:
@@ -50,7 +42,7 @@ Environment variables: `ELECTRS_X=Y;...`
 Arguments: `--foo`
 
 **System running electrs**
- - Deployment method: manual (which guide did you follow?)/native OS package/Docker
+ - Deployment method: manual/native OS package/Docker
  - OS name and version (name of distribution and version in case of Linux)
 
 **Electrum client**
