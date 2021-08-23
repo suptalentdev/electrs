@@ -1,37 +1,28 @@
-#[macro_use]
-extern crate anyhow;
+#![recursion_limit = "1024"]
 
+#[macro_use]
+extern crate error_chain;
 #[macro_use]
 extern crate log;
-
 #[macro_use]
 extern crate serde_derive;
-
+#[macro_use]
+extern crate serde_json;
+// I really don't know why it fails without this line
 extern crate configure_me;
 
-mod cache;
-mod chain;
-mod config;
-mod daemon;
-mod db;
-mod electrum;
-mod index;
-mod mempool;
-mod merkle;
-mod metrics;
-mod p2p;
-pub mod server;
-mod signals;
-mod status;
-mod tracker;
-mod types;
-
-pub use {
-    cache::Cache,
-    config::Config,
-    daemon::Daemon,
-    electrum::{Client, Rpc},
-    status::{Balance, ScriptHashStatus},
-    tracker::Tracker,
-    types::ScriptHash,
-};
+pub mod app;
+pub mod bulk;
+pub mod cache;
+pub mod config;
+pub mod daemon;
+pub mod errors;
+pub mod fake;
+pub mod index;
+pub mod mempool;
+pub mod metrics;
+pub mod query;
+pub mod rpc;
+pub mod signal;
+pub mod store;
+pub mod util;
