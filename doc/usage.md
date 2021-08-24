@@ -7,9 +7,9 @@
 Note for Raspberry Pi 4 owners: the old versions of OS/toolchains produce broken binaries.
 Make sure to use latest OS! (see #226)
 
-Install [recent Rust](https://rustup.rs/) (1.41.1+, `apt install cargo` is preferred for Debian 10),
-[latest Bitcoin Core](https://bitcoincore.org/en/download/) (0.16+)
-and [latest Electrum wallet](https://electrum.org/#download) (3.3+).
+Install [recent Rust](https://rustup.rs/) (1.48.0+, `apt install cargo` is preferred for Debian 10),
+[latest Bitcoin Core](https://bitcoincore.org/en/download/) (0.21+)
+and [latest Electrum wallet](https://electrum.org/#download) (4.0+).
 
 Also, install the following packages (on Debian or Ubuntu):
 ```bash
@@ -193,7 +193,8 @@ If you use automated systems, refer to their documentation first!
 
 Pruning must be turned **off** for `electrs` to work.
 `txindex` is allowed but unnecessary for `electrs`.
-However, you might still need it if you run other services (e.g.`eclair`)
+However, you might still need it if you run other services (e.g.`eclair`).
+The option `maxconnections` (if used) should be set to 12 or more for bitcoind to accept inbound p2p connections.
 
 The highly recommended way of authenticating `electrs` is using cookie file.
 It's the most [secure](https://github.com/Kixunil/security_writings/blob/master/cookie_files.md) and robust method.
@@ -230,10 +231,10 @@ It is a good practice to use these special arguments at the beginning of the com
 
 **Naming convention**
 
-For each command line argument an **environment variable** of the same name with `ELECTRS_` prefix, upper case letters and underscores instead of hyphens exists
+For each command line argument an **environment variable** of the same name with `ELECTRS_` prefix, upper case letters and underscores instead of hypens exists
 (e.g. you can use `ELECTRS_ELECTRUM_RPC_ADDR` instead of `--electrum-rpc-addr`).
 
-Similarly, for each such argument an option in config file exists with underscores instead of hyphens (e.g. `electrum_rpc_addr`).
+Similarly, for each such argument an option in config file exists with underscores instead of hypens (e.g. `electrum_rpc_addr`).
 
 You need to use a number in config file if you want to increase verbosity (e.g. `verbose = 3` is equivalent to `-vvv`) and `true` value in case of flags (e.g. `timestamp = true`)
 
@@ -447,20 +448,7 @@ You can invoke any supported RPC using `netcat`, for example:
 
 ```
 $ echo '{"jsonrpc": "2.0", "method": "server.version", "params": ["", "1.4"], "id": 0}' | netcat 127.0.0.1 50001
-{"id":0,"jsonrpc":"2.0","result":["electrs 0.8.10","1.4"]}
-```
-Corresponding example in `Python`:
-
-```
-import json
-import socket
-
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect(("127.0.0.1", 50001))
-    f = s.makefile()
-    message = json.dumps({"jsonrpc": "2.0", "method": "server.version", "params": ["", "1.4"], "id": "0"})
-    s.sendall((message + '\n').encode())
-    print(json.loads(f.readline()))
+{"id":0,"jsonrpc":"2.0","result":["electrs 0.8.6","1.4"]}
 ```
 
 For more complex tasks, you may need to convert addresses to 
@@ -508,8 +496,8 @@ If a new version of `electrs` is not yet in the package system, try wait a few d
    If you've deleted it, you need to `git clone` again.
 2. `git checkout master`
 3. `git pull`
-4. Strongly recommended: `git verify-tag v0.8.10` (fix the version number if we've forgotten to update this docs ;)) should show "Good signature from 15C8 C357 4AE4 F1E2 5F3F 35C5 87CA E5FA 4691 7CBB"
-5. `git checkout v0.8.10`
+4. Strongly recommended: `git verify-tag v0.8.6` (fix the version number if we've forgotten to update this docs ;)) should show "Good signature from 15C8 C357 4AE4 F1E2 5F3F 35C5 87CA E5FA 4691 7CBB"
+5. `git checkout v0.8.6`
 6. If you used static linking: `cargo build --locked --release`.
    If you used dynamic linking `ROCKSDB_INCLUDE_DIR=/usr/include ROCKSDB_LIB_DIR=/usr/lib cargo build --locked --no-default-features --release`.
    If you don't remember which linking you used, you probably used static.
