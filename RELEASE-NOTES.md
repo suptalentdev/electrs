@@ -1,49 +1,12 @@
-# 0.8.12 (14 Sep 2021)
+# 0.9.0 (TBD)
 
-* Fail if `cookie` is specified (#478)
-* Move usage in README up and recommend our guide (#463)
-* A bunch of improvements to issue templates (#462)
-
-# 0.8.11 (18 Aug 2021)
-
-* Update dependencies (#401, #402)
-* Add python example in RPC examples (#415, #417)
-* Add regtest and signet networks in examples (#425)
-* Clippy fixes (#430)
-* CI fixes (#437, #438, #441)
-* Update relevant versions (#450)
-* Drop unused compression algorithms for RocksDB
-
-# 0.8.10 (14 May 2021)
-
-* Fix JSONRPC errors' handling (#398, #390)
-* Optimize Dockerfile (#387, #388, #392)
-* Fix signet default port (https://github.com/romanz/electrs/b53178c140e575b0527a70ead566d50c7fe6cb1f)
-
-# 0.8.9 (19 Mar 2021)
-
-* Use non-batched RPC to reduce bitcoind memory usage (#373)
-* Fix inverted logic of deprecation (#379)
-* Ignore individual mempool transaction fetch fails (#381)
-* Increase default wait_duration_secs to 10s (#384)
-
-# 0.8.8 (22 Feb 2021)
-
-* Deprecate `--cookie` configuration (@Kixunil)
-* Update dependencies (@Kixunil)
-* Improve documentation (@Kixunil)
-
-# 0.8.7 (15 Jan 2021)
-
-* Support signet (#239)
-
-# 0.8.6 (25 Nov 2020)
-* [Fix](https://github.com/romanz/electrs/commit/c88a0dc331eb16163276becf98fcc020565d97eb) Electrum fee histogram duplicates
-* [Fix](https://github.com/romanz/electrs/commit/8f2f53303a62321e3ccd1a8dc42b46c63629a03f) Electrum protocol negotiation
-* Update multiple crates (@kixunil): [lru](#333), [prometheus](#334), [dirs-next](#335)
-* Support Rust 1.41.1 (for Debian stable)
-* [Update](https://github.com/romanz/electrs/commit/af6ff09a275ec12b6fd0d6a101637f4710902a3c) bitcoin crate (@dr-orlovsky)
-* [Fix](https://github.com/romanz/electrs/commit/4764dccbbe4cd04a6dc79771a686847d8e6e2edf) a deadlock when shutting down (@kixunil)
+* Fix incorrect ordering of same-block transactions (#297)
+* Change DB index format and use Zstd compression (instead of Snappy)
+* Don't use bitcoind JSON RPC for fetching blocks (#373)
+* Use p2p for block fetching (instead of reading `blk*.dat` files)
+* Support Electrum JSON RPC batching and errors
+* Use `rust-bitcoincore-rpc` crate
+* Increase default `index_lookup_limit` to 200
 
 # 0.8.5 (1 July 2020)
 
