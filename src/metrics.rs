@@ -44,8 +44,14 @@ mod metrics_impl {
             Ok(result)
         }
 
-        pub fn histogram_vec(&self, name: &str, desc: &str, label: &str) -> Histogram {
-            let opts = HistogramOpts::new(name, desc);
+        pub fn histogram_vec(
+            &self,
+            name: &str,
+            desc: &str,
+            label: &str,
+            buckets: Vec<f64>,
+        ) -> Histogram {
+            let opts = HistogramOpts::new(name, desc).buckets(buckets);
             let hist = HistogramVec::new(opts, &[label]).unwrap();
             self.reg
                 .register(Box::new(hist.clone()))
@@ -111,7 +117,13 @@ mod metrics_fake {
             Ok(Self {})
         }
 
-        pub fn histogram_vec(&self, _name: &str, _desc: &str, _label: &str) -> Histogram {
+        pub fn histogram_vec(
+            &self,
+            _name: &str,
+            _desc: &str,
+            _label: &str,
+            _buckets: Vec<f64>,
+        ) -> Histogram {
             Histogram {}
         }
 
@@ -144,3 +156,17 @@ mod metrics_fake {
 
 #[cfg(not(feature = "metrics"))]
 pub use metrics_fake::{Gauge, Histogram, Metrics};
+
+pub(crate) fn default_duration_buckets() -> Vec<f64> {
+    vec![
+        1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2, 5e-2,
+        1e-1, 2e-1, 5e-1, 1.0, 2.0, 5.0, 10.0,
+    ]
+}
+
+pub(crate) fn default_size_buckets() -> Vec<f64> {
+    vec![
+        1.0, 2.0, 5.0, 1e1, 2e1, 5e1, 1e2, 2e2, 5e2, 1e3, 2e3, 5e3, 1e4, 2e4, 5e4, 1e5, 2e5, 5e5,
+        1e6,
+    ]
+}

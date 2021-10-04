@@ -16,7 +16,7 @@ use crate::{
     config::Config,
     daemon::{self, extract_bitcoind_error, Daemon},
     merkle::Proof,
-    metrics::Histogram,
+    metrics::{self, Histogram},
     signals::Signal,
     status::ScriptHashStatus,
     tracker::Tracker,
@@ -124,10 +124,12 @@ pub struct Rpc {
 impl Rpc {
     /// Perform initial index sync (may take a while on first run).
     pub fn new(config: &Config, mut tracker: Tracker) -> Result<Self> {
-        let rpc_duration =
-            tracker
-                .metrics()
-                .histogram_vec("rpc_duration", "RPC duration (in seconds)", "method");
+        let rpc_duration = tracker.metrics().histogram_vec(
+            "rpc_duration",
+            "RPC duration (in seconds)",
+            "method",
+            metrics::default_duration_buckets(),
+        );
 
         let signal = Signal::new();
         tracker
