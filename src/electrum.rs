@@ -124,15 +124,10 @@ pub struct Rpc {
 impl Rpc {
     /// Perform initial index sync (may take a while on first run).
     pub fn new(config: &Config, mut tracker: Tracker) -> Result<Self> {
-        let rpc_duration = tracker.metrics().histogram_vec(
-            "rpc_duration",
-            "RPC duration (in seconds)",
-            "method",
-            vec![
-                1e-6, 2e-6, 5e-6, 1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3, 5e-3, 1e-2, 2e-2,
-                5e-2, 1e-1, 2e-1, 5e-1, 1.0, 2.0, 5.0, 10.0,
-            ],
-        );
+        let rpc_duration =
+            tracker
+                .metrics()
+                .histogram_vec("rpc_duration", "RPC duration (in seconds)", "method");
 
         let signal = Signal::new();
         tracker
@@ -263,16 +258,16 @@ impl Rpc {
         (scripthash,): (ScriptHash,),
     ) -> Result<Value> {
         let history_entries = match client.scripthashes.get(&scripthash) {
-            Some(status) => self.tracker.get_history(status),
+            Some(status) => json!(status.get_history()),
             None => {
                 warn!(
                     "blockchain.scripthash.get_history called for unsubscribed scripthash: {}",
                     scripthash
                 );
-                self.tracker.get_history(&self.new_status(scripthash)?)
+                json!(self.new_status(scripthash)?.get_history())
             }
         };
-        Ok(json!(history_entries))
+        Ok(history_entries)
     }
 
     fn scripthash_list_unspent(
