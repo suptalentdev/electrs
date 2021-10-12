@@ -8,7 +8,7 @@ use crate::{
     daemon::Daemon,
     db::DBStore,
     index::Index,
-    mempool::{FeeHistogram, Mempool},
+    mempool::{Histogram, Mempool},
     metrics::Metrics,
     signals::ExitFlag,
     status::{Balance, ScriptHashStatus, UnspentEntry},
@@ -37,7 +37,7 @@ impl Tracker {
                 config.reindex_last_blocks,
             )
             .context("failed to open index")?,
-            mempool: Mempool::new(&metrics),
+            mempool: Mempool::new(),
             metrics,
             ignore_mempool: config.ignore_mempool,
         })
@@ -47,7 +47,7 @@ impl Tracker {
         self.index.chain()
     }
 
-    pub(crate) fn fees_histogram(&self) -> &FeeHistogram {
+    pub(crate) fn fees_histogram(&self) -> &Histogram {
         self.mempool.fees_histogram()
     }
 

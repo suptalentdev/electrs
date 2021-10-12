@@ -11,11 +11,7 @@ use bitcoincore_rpc::json;
 use rayon::prelude::*;
 use serde::ser::{Serialize, SerializeSeq, Serializer};
 
-use crate::{
-    daemon::Daemon,
-    metrics::{Gauge, Metrics},
-    types::ScriptHash,
-};
+use crate::{daemon::Daemon, types::ScriptHash};
 
 pub(crate) struct Entry {
     pub txid: Txid,
@@ -30,10 +26,7 @@ pub(crate) struct Mempool {
     entries: HashMap<Txid, Entry>,
     by_funding: BTreeSet<(ScriptHash, Txid)>,
     by_spending: BTreeSet<(OutPoint, Txid)>,
-    fees: FeeHistogram,
-    // stats
-    vsize: Gauge,
-    count: Gauge,
+    histogram: Histogram,
 }
 
 // Smallest possible txid
@@ -47,22 +40,17 @@ fn txid_max() -> Txid {
 }
 
 impl Mempool {
-    pub fn new(metrics: &Metrics) -> Self {
+    pub fn new() -> Self {
         Self {
             entries: Default::default(),
             by_funding: Default::default(),
             by_spending: Default::default(),
-            fees: FeeHistogram::empty(),
-            vsize: metrics.gauge(
-                "mempool_txs_vsize",
-                "Total vsize of mempool transactions (in bytes)",
-            ),
-            count: metrics.gauge("mempool_txs_count", "Total number of mempool transactions"),
+            histogram: Histogram::empty(),
         }
     }
 
-    pub(crate) fn fees_histogram(&self) -> &FeeHistogram {
-        &self.fees
+    pub(crate) fn fees_histogram(&self) -> &Histogram {
+        &self.histogram
     }
 
     pub(crate) fn get(&self, txid: &Txid) -> Option<&Entry> {
@@ -127,10 +115,7 @@ impl Mempool {
         for (txid, tx, entry) in entries {
             self.add_entry(*txid, tx, entry);
         }
-        self.fees = FeeHistogram::new(self.entries.values().map(|e| (e.fee, e.vsize)));
-        self.vsize
-            .set(self.entries.values().map(|e| e.vsize).sum::<u64>() as f64);
-        self.count.set(self.entries.values().len() as f64);
+        self.histogram = Histogram::new(self.entries.values().map(|e| (e.fee, e.vsize)));
         debug!(
             "{} mempool txs: {} added, {} removed",
             self.entries.len(),
@@ -172,7 +157,7 @@ impl Mempool {
     }
 }
 
-pub(crate) struct FeeHistogram {
+pub(crate) struct Histogram {
     /// bins[64-i] contains the total vsize of transactions with fee rate [2**(i-1), 2**i).
     /// bins[63] = [1, 2)
     /// bins[62] = [2, 4)
@@ -181,10 +166,10 @@ pub(crate) struct FeeHistogram {
     /// ...
     /// bins[1] = [2**62, 2**63)
     /// bins[0] = [2**63, 2**64)
-    bins: [u64; FeeHistogram::SIZE],
+    bins: [u64; Histogram::SIZE],
 }
 
-impl FeeHistogram {
+impl Histogram {
     const SIZE: usize = 64;
 
     fn empty() -> Self {
@@ -205,14 +190,14 @@ impl FeeHistogram {
     }
 }
 
-impl Serialize for FeeHistogram {
+impl Serialize for Histogram {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         let mut seq = serializer.serialize_seq(Some(self.bins.len()))?;
         // https://electrumx-spesmilo.readthedocs.io/en/latest/protocol-methods.html#mempool-get-fee-histogram
-        let fee_rates = (0..FeeHistogram::SIZE).map(|i| std::u64::MAX >> i);
+        let fee_rates = (0..Histogram::SIZE).map(|i| std::u64::MAX >> i);
         fee_rates
             .zip(self.bins.iter().copied())
             .skip_while(|(_fee_rate, vsize)| *vsize == 0)
@@ -223,7 +208,7 @@ impl Serialize for FeeHistogram {
 
 #[cfg(test)]
 mod tests {
-    use super::FeeHistogram;
+    use super::Histogram;
     use bitcoin::Amount;
     use serde_json::json;
 
@@ -239,7 +224,7 @@ mod tests {
             (Amount::from_sat(40), 10),
             (Amount::from_sat(80), 10),
         ];
-        let hist = json!(FeeHistogram::new(items.into_iter()));
+        let hist = json!(Histogram::new(items.into_iter()));
         assert_eq!(hist, json!([[15, 10], [7, 40], [3, 20], [1, 10]]));
     }
 }
