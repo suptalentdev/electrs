@@ -249,7 +249,7 @@ impl Rpc {
             Some(status) => self.tracker.get_balance(status),
             None => {
                 info!(
-                    "{}: blockchain.scripthash.get_balance called for unsubscribed scripthash: {}",
+                    "{} blockchain.scripthash.get_balance called for unsubscribed scripthash: {}",
                     UNSUBSCRIBED_QUERY_MESSAGE, scripthash
                 );
                 self.tracker.get_balance(&self.new_status(*scripthash)?)
@@ -267,7 +267,7 @@ impl Rpc {
             Some(status) => json!(status.get_history()),
             None => {
                 info!(
-                    "{}: blockchain.scripthash.get_history called for unsubscribed scripthash: {}",
+                    "{} blockchain.scripthash.get_history called for unsubscribed scripthash: {}",
                     UNSUBSCRIBED_QUERY_MESSAGE, scripthash
                 );
                 json!(self.new_status(*scripthash)?.get_history())
@@ -285,7 +285,7 @@ impl Rpc {
             Some(status) => self.tracker.get_unspent(status),
             None => {
                 info!(
-                    "{}: blockchain.scripthash.listunspent called for unsubscribed scripthash: {}",
+                    "{} blockchain.scripthash.listunspent called for unsubscribed scripthash: {}",
                     UNSUBSCRIBED_QUERY_MESSAGE, scripthash
                 );
                 self.tracker.get_unspent(&self.new_status(*scripthash)?)
@@ -371,21 +371,17 @@ impl Rpc {
             None => bail!("missing block at {}", height),
             Some(blockhash) => blockhash,
         };
-        let proof_to_value = |proof: &Proof| {
-            json!({
-                "block_height": height,
-                "pos": proof.position(),
-                "merkle": proof.to_hex(),
-            })
-        };
-        if let Some(result) = self.cache.get_proof(blockhash, *txid, proof_to_value) {
-            return Ok(result);
-        }
-        debug!("proof cache miss: blockhash={} txid={}", blockhash, txid);
         let txids = self.daemon.get_block_txids(blockhash)?;
         match txids.iter().position(|current_txid| *current_txid == *txid) {
             None => bail!("missing txid {} in block {}", txid, blockhash),
-            Some(position) => Ok(proof_to_value(&Proof::create(&txids, position))),
+            Some(position) => {
+                let proof = Proof::create(&txids, position);
+                Ok(json!({
+                "block_height": height,
+                "pos": proof.position(),
+                "merkle": proof.to_hex(),
+                }))
+            }
         }
     }
 
